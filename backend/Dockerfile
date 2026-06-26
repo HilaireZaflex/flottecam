@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Extensions PHP nécessaires pour Laravel
 RUN apk add --no-cache \
@@ -8,6 +8,7 @@ RUN apk add --no-cache \
     git \
     zip \
     unzip \
+    libzip-dev \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -23,6 +24,7 @@ RUN apk add --no-cache \
         bcmath \
         gd \
         xml \
+        zip \
         opcache
 
 # Installer Composer
