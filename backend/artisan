@@ -1,0 +1,22 @@
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+// Suppress PHP 8.5 PDO deprecation warnings
+error_reporting(E_ALL & ~E_DEPRECATED);
+
+// Register the Composer autoloader...
+require __DIR__.'/vendor/autoload.php';
+
+// Bootstrap Laravel and handle the command...
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+
+exit($kernel->handle(
+    $input = new ArgvInput,
+    new Symfony\Component\Console\Output\ConsoleOutput
+));

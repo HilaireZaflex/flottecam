@@ -1,0 +1,9 @@
+date,designation,quantite,prix_unitaire,type_operation,categorie,plaque_camion,notes
+2026-03-01,Gasoil plein Mercedes Actros,300,650,depense,carburant,AB-123-CD,Trajet Paris-Lyon A6
+2026-03-02,Transport client Aldi,1,450000,recette,transport,EF-456-GH,Livraison terminée
+2026-03-03,Vidange + filtres,1,45000,depense,entretien,IJ-789-KL,Garage Central Paris
+2026-03-05,Pneus neufs x4,4,32000,depense,pneumatique,AB-123-CD,
+2026-03-07,Transport Decathlon,1,380000,recette,transport,IJ-789-KL,Payé à réception
+2026-03-10,Péage A7 Lyon-Marseille,1,18500,depense,peage,EF-456-GH,
+2026-03-12,Salaire Mohamed Benali,1,85000,depense,salaire,,Mars 2026
+2026-03-15,Rembours. avance carburant,1,25000,recette,remboursement,,

@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import 'leaflet/dist/leaflet.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F0F4FF; color: #0F172A; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #F1F5F9; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+}
+
+@layer components {
+  .card { @apply bg-white rounded-2xl shadow-card p-6; }
+  .btn-primary { @apply bg-primary text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary-dark transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md; }
+  .btn-secondary { @apply bg-white text-primary border border-primary/30 px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary/5 transition-all duration-200 flex items-center gap-2; }
+  .btn-danger { @apply bg-danger text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-600 transition-all duration-200 flex items-center gap-2; }
+  .input { @apply w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-slate-50 transition-all; }
+  .badge { @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold; }
+  .table-row { @apply border-b border-slate-50 hover:bg-primary/[0.02] transition-colors; }
+  .sidebar-item { @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer; }
+  .sidebar-item.active { @apply bg-primary/10 text-primary font-semibold; }
+  .sidebar-item:not(.active) { @apply text-slate-500 hover:bg-slate-100 hover:text-slate-800; }
+  .stat-card { @apply bg-white rounded-2xl shadow-card p-5 flex flex-col gap-3; }
+  .section-title { @apply text-lg font-bold text-slate-800 tracking-tight; }
+  .page-header { @apply flex items-center justify-between mb-6; }
+}

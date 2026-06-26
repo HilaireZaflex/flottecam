@@ -1,0 +1,63 @@
+{
+    "name": "FlotteCam",
+    "short_name": "FlotteCam",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1B4FD8",
+    "theme_color": "#1B4FD8",
+    "description": "FlotteCam — Gestion de flotte de camions professionnelle. Suivez vos véhicules, chauffeurs et transports en temps réel.",
+    "orientation": "any",
+    "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
+    "lang": "fr",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Tableau de bord",
+            "short_name": "Dashboard",
+            "description": "Accéder au tableau de bord",
+            "url": "/dashboard",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Camions",
+            "short_name": "Camions",
+            "description": "Gérer les camions",
+            "url": "/trucks",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "GPS",
+            "short_name": "GPS",
+            "description": "Suivi GPS des véhicules",
+            "url": "/gps",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}

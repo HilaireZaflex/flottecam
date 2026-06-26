@@ -1,0 +1,82 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond dégradé bleu -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1B4FD8"/>
+      <stop offset="100%" style="stop-color:#3B6EF0"/>
+    </linearGradient>
+    <linearGradient id="truckGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF" stop-opacity="1"/>
+      <stop offset="100%" style="stop-color:#E8EFFF" stop-opacity="1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond arrondi -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Brillance subtile en haut -->
+  <ellipse cx="256" cy="80" rx="220" ry="60" fill="white" opacity="0.06"/>
+
+  <!-- Corps du camion (remorque) -->
+  <rect x="48" y="220" width="280" height="160" rx="20" fill="url(#truckGrad)"/>
+
+  <!-- Cabine du camion -->
+  <path d="M328 270 L328 380 L430 380 L464 340 L464 300 L390 270 Z" fill="url(#truckGrad)"/>
+
+  <!-- Fenêtre cabine -->
+  <rect x="345" y="282" width="70" height="52" rx="10" fill="#1B4FD8" opacity="0.85"/>
+  <!-- Reflet vitre -->
+  <rect x="348" y="285" width="30" height="22" rx="5" fill="white" opacity="0.25"/>
+
+  <!-- Ligne de calandre -->
+  <rect x="456" y="320" width="8" height="40" rx="4" fill="#1B4FD8" opacity="0.5"/>
+
+  <!-- Carrosserie détail (bandes horizontales) -->
+  <rect x="48" y="260" width="280" height="4" rx="2" fill="#1B4FD8" opacity="0.12"/>
+  <rect x="48" y="300" width="280" height="4" rx="2" fill="#1B4FD8" opacity="0.12"/>
+
+  <!-- Roue arrière gauche -->
+  <circle cx="130" cy="388" r="52" fill="#1E293B"/>
+  <circle cx="130" cy="388" r="32" fill="#334155"/>
+  <circle cx="130" cy="388" r="16" fill="#94A3B8"/>
+  <!-- Boulons roue arrière -->
+  <circle cx="130" cy="364" r="5" fill="#1E293B"/>
+  <circle cx="130" cy="412" r="5" fill="#1E293B"/>
+  <circle cx="106" cy="388" r="5" fill="#1E293B"/>
+  <circle cx="154" cy="388" r="5" fill="#1E293B"/>
+
+  <!-- Roue arrière droite -->
+  <circle cx="250" cy="388" r="52" fill="#1E293B"/>
+  <circle cx="250" cy="388" r="32" fill="#334155"/>
+  <circle cx="250" cy="388" r="16" fill="#94A3B8"/>
+  <circle cx="250" cy="364" r="5" fill="#1E293B"/>
+  <circle cx="250" cy="412" r="5" fill="#1E293B"/>
+  <circle cx="226" cy="388" r="5" fill="#1E293B"/>
+  <circle cx="274" cy="388" r="5" fill="#1E293B"/>
+
+  <!-- Roue cabine -->
+  <circle cx="410" cy="388" r="48" fill="#1E293B"/>
+  <circle cx="410" cy="388" r="29" fill="#334155"/>
+  <circle cx="410" cy="388" r="14" fill="#94A3B8"/>
+  <circle cx="410" cy="366" r="4" fill="#1E293B"/>
+  <circle cx="410" cy="410" r="4" fill="#1E293B"/>
+  <circle cx="388" cy="388" r="4" fill="#1E293B"/>
+  <circle cx="432" cy="388" r="4" fill="#1E293B"/>
+
+  <!-- Porte latérale -->
+  <rect x="160" y="228" width="2" height="144" rx="1" fill="#1B4FD8" opacity="0.2"/>
+
+  <!-- === Signal GPS en haut à droite === -->
+  <!-- Point GPS central -->
+  <circle cx="400" cy="130" r="22" fill="#06B6D4"/>
+  <circle cx="400" cy="130" r="12" fill="white"/>
+  <circle cx="400" cy="130" r="5" fill="#06B6D4"/>
+
+  <!-- Ondes GPS (3 arcs concentriques) -->
+  <path d="M368 98 Q400 66 432 98" stroke="white" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.9"/>
+  <path d="M350 80 Q400 30 450 80" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.55"/>
+  <path d="M332 62 Q400 2 468 62" stroke="white" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.25"/>
+
+  <!-- Ligne de connexion GPS → camion (pointillés) -->
+  <line x1="400" y1="152" x2="328" y2="265" stroke="white" stroke-width="4" stroke-dasharray="10,8" opacity="0.3" stroke-linecap="round"/>
+</svg>

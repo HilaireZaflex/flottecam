@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="FlotteCam — Gestion de flotte de camions professionnelle. Suivez vos véhicules, chauffeurs et transports en temps réel.">
+  <meta name="keywords" content="gestion flotte, camions, transport, GPS, chauffeurs">
+  <meta name="theme-color" content="#1B4FD8">
+  <meta name="color-scheme" content="light">
+
+  <!-- PWA — Installation sur Android/Chrome -->
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- PWA — Installation sur iOS/Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FlotteCam">
+
+  <!-- Icônes Apple (iPhone/iPad) -->
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/Icon-192.png">
+
+  <!-- Splash screens iOS -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Open Graph (partage réseaux sociaux) -->
+  <meta property="og:title" content="FlotteCam">
+  <meta property="og:description" content="Gestion de flotte de camions professionnelle">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+
+  <title>FlotteCam</title>
+
+  <style>
+    /* Splash screen affiché pendant le chargement Flutter */
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background-color: #1B4FD8;
+      overflow: hidden;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1B4FD8 0%, #3B6EF0 100%);
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .splash-logo {
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .splash-logo svg {
+      width: 60px;
+      height: 60px;
+    }
+
+    .splash-title {
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin: 0 0 8px 0;
+    }
+
+    .splash-subtitle {
+      color: rgba(255,255,255,0.75);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      margin: 0 0 48px 0;
+    }
+
+    .splash-loader {
+      width: 40px;
+      height: 4px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .splash-loader-bar {
+      height: 100%;
+      background: white;
+      border-radius: 4px;
+      animation: loading 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes loading {
+      0% { width: 0%; margin-left: 0%; }
+      50% { width: 70%; margin-left: 15%; }
+      100% { width: 0%; margin-left: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Splash Screen FlotteCam -->
+  <div id="splash">
+    <div class="splash-logo">
+      <!-- Logo FlotteCam SVG inline -->
+      <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Camion -->
+        <rect x="4" y="22" width="34" height="20" rx="4" fill="white" opacity="0.9"/>
+        <path d="M38 28h8l6 8v6H38V28z" fill="white" opacity="0.9"/>
+        <!-- Fenêtre cabine -->
+        <rect x="40" y="30" width="6" height="5" rx="1.5" fill="#1B4FD8"/>
+        <!-- Roues -->
+        <circle cx="14" cy="44" r="5" fill="#1B4FD8"/>
+        <circle cx="14" cy="44" r="2.5" fill="white"/>
+        <circle cx="46" cy="44" r="5" fill="#1B4FD8"/>
+        <circle cx="46" cy="44" r="2.5" fill="white"/>
+        <!-- Signal GPS -->
+        <circle cx="48" cy="12" r="3" fill="white" opacity="0.9"/>
+        <path d="M44 8 Q48 4 52 8" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7"/>
+        <path d="M41 5 Q48 -1 55 5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4"/>
+      </svg>
+    </div>
+    <p class="splash-title">FlotteCam</p>
+    <p class="splash-subtitle">Gestion de flotte professionnelle</p>
+    <div class="splash-loader">
+      <div class="splash-loader-bar"></div>
+    </div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Masquer le splash quand Flutter est prêt
+    window.addEventListener('flutter-first-frame', function() {
+      var splash = document.getElementById('splash');
+      if (splash) {
+        splash.classList.add('hidden');
+        setTimeout(function() { splash.remove(); }, 500);
+      }
+    });
+
+    // Enregistrement du Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('flutter_service_worker.js', {
+          scope: '/'
+        }).then(function(reg) {
+          console.log('[FlotteCam] Service Worker enregistré:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[FlotteCam] Service Worker échec:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

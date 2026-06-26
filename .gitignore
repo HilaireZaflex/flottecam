@@ -1,0 +1,54 @@
+# ── Environnements ────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+
+# ── Backend Laravel ───────────────────────────────────────────────────────────
+backend/vendor/
+backend/node_modules/
+backend/storage/logs/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+backend/.env
+backend/public/storage
+
+# ── Flutter ───────────────────────────────────────────────────────────────────
+flutter_app/.dart_tool/
+flutter_app/build/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/pubspec.lock
+flutter_app/.packages
+flutter_app/ios/Pods/
+flutter_app/macos/Pods/
+
+driver_app/.dart_tool/
+driver_app/build/
+driver_app/.flutter-plugins
+driver_app/.flutter-plugins-dependencies
+driver_app/pubspec.lock
+driver_app/ios/Pods/
+driver_app/macos/Pods/
+
+# ── Web Dashboard ─────────────────────────────────────────────────────────────
+web-dashboard/node_modules/
+web-dashboard/dist/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+
+# ── Logs & tmp ────────────────────────────────────────────────────────────────
+*.log
+tmp/
