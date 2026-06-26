@@ -161,7 +161,7 @@
   <script src="flutter_bootstrap.js" async></script>
 
   <script>
-    // Masquer le splash quand Flutter est prêt
+    // ── Masquer le splash quand Flutter est prêt ──────────────────────────
     window.addEventListener('flutter-first-frame', function() {
       var splash = document.getElementById('splash');
       if (splash) {
@@ -170,13 +170,39 @@
       }
     });
 
-    // Enregistrement du Service Worker
+    // ── Service Worker + Mise à jour automatique ──────────────────────────
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('flutter_service_worker.js', {
-          scope: '/'
+          scope: '/',
+          updateViaCache: 'none'  // ← Ne jamais utiliser le cache pour le SW
         }).then(function(reg) {
-          console.log('[FlotteCam] Service Worker enregistré:', reg.scope);
+          console.log('[FlotteCam] Service Worker enregistré');
+
+          // Vérifier les mises à jour toutes les 60 secondes
+          setInterval(function() { reg.update(); }, 60000);
+
+          // Nouvelle version détectée → afficher bannière de mise à jour
+          reg.addEventListener('updatefound', function() {
+            var newWorker = reg.installing;
+            newWorker.addEventListener('statechange', function() {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Recharger AUTOMATIQUEMENT (silencieux, sans demander à l'utilisateur)
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+
+          // Quand le nouveau SW prend le contrôle → recharger la page
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (!refreshing) {
+              refreshing = true;
+              console.log('[FlotteCam] Nouvelle version détectée — rechargement...');
+              window.location.reload();
+            }
+          });
+
         }).catch(function(err) {
           console.warn('[FlotteCam] Service Worker échec:', err);
         });
