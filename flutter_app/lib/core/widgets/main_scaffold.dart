@@ -65,13 +65,28 @@ class MainScaffold extends ConsumerWidget {
       );
     }
 
-    // Mobile : bottom nav bar originale
+    // Mobile : Floating Action Bar
     return Scaffold(
-      body: child,
-      bottomNavigationBar: _ElegantNavBar(
-        items: items,
-        currentIndex: index,
-        onTap: (i) => context.go(items[i].route),
+      backgroundColor: const Color(0xFFF1F5FB),
+      body: Stack(
+        children: [
+          // Contenu principal avec padding en bas pour la floating bar
+          Positioned.fill(
+            bottom: 80,
+            child: child,
+          ),
+          // Floating Navigation Bar
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: _FloatingNavBar(
+              items: items,
+              currentIndex: index,
+              onTap: (i) => context.go(items[i].route),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -373,69 +388,166 @@ class _SideNavTile extends StatelessWidget {
   }
 }
 
-class _ElegantNavBar extends StatelessWidget {
+// ── Floating Navigation Bar (mobile) ─────────────────────────────────────────
+class _FloatingNavBar extends StatefulWidget {
   final List<_NavData> items;
   final int currentIndex;
   final void Function(int) onTap;
 
-  const _ElegantNavBar({
+  const _FloatingNavBar({
     required this.items,
     required this.currentIndex,
     required this.onTap,
   });
 
   @override
+  State<_FloatingNavBar> createState() => _FloatingNavBarState();
+}
+
+class _FloatingNavBarState extends State<_FloatingNavBar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _menuCtrl;
+  late Animation<double> _menuAnim;
+  bool _menuOpen = false;
+
+  // 5 items principaux visibles dans la barre
+  static const _mainCount = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    _menuCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _menuAnim = CurvedAnimation(parent: _menuCtrl, curve: Curves.easeOutCubic);
+  }
+
+  @override
+  void dispose() {
+    _menuCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggleMenu() {
+    setState(() => _menuOpen = !_menuOpen);
+    _menuOpen ? _menuCtrl.forward() : _menuCtrl.reverse();
+  }
+
+  void _closeMenu() {
+    setState(() => _menuOpen = false);
+    _menuCtrl.reverse();
+  }
+
+  // Items principaux (5 premiers)
+  List<_NavData> get _mainItems => widget.items.take(_mainCount).toList();
+  // Items secondaires (le reste)
+  List<_NavData> get _moreItems =>
+      widget.items.skip(_mainCount).toList();
+
+  // L'index actuel est-il dans les "plus" ?
+  bool get _isMoreActive => widget.currentIndex >= _mainCount;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1B4FD8).withOpacity(0.3),
-            blurRadius: 30,
-            offset: const Offset(0, -8),
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 62,
-          child: Row(
-            children: items.asMap().entries.map((e) {
-              final i    = e.key;
-              final item = e.value;
-              final isActive = i == currentIndex;
-              return Expanded(
-                child: _NavTile(
-                  item: item,
-                  isActive: isActive,
-                  onTap: () => onTap(i),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Menu "Plus" (panneau qui monte) ──────────────────────────
+        AnimatedBuilder(
+          animation: _menuAnim,
+          builder: (context, _) {
+            if (_menuAnim.value == 0) return const SizedBox.shrink();
+            return FadeTransition(
+              opacity: _menuAnim,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.3),
+                  end: Offset.zero,
+                ).animate(_menuAnim),
+                child: _MoreMenu(
+                  items: _moreItems,
+                  startIndex: _mainCount,
+                  currentIndex: widget.currentIndex,
+                  onTap: (i) {
+                    _closeMenu();
+                    widget.onTap(i);
+                  },
                 ),
-              );
-            }).toList(),
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 8),
+
+        // ── Barre flottante principale ────────────────────────────────
+        Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0F172A), Color(0xFF1A2744)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1B4FD8).withOpacity(0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // 5 items principaux
+              ..._mainItems.asMap().entries.map((e) {
+                final i = e.key;
+                final item = e.value;
+                final isActive = i == widget.currentIndex && !_menuOpen;
+                return Expanded(
+                  child: _FloatingNavTile(
+                    item: item,
+                    isActive: isActive,
+                    onTap: () {
+                      _closeMenu();
+                      widget.onTap(i);
+                    },
+                  ),
+                );
+              }),
+
+              // Bouton "Plus"
+              Expanded(
+                child: _MoreButton(
+                  isActive: _isMoreActive || _menuOpen,
+                  isOpen: _menuOpen,
+                  badge: _moreItems.fold(0, (sum, i) => sum + i.badge),
+                  onTap: _toggleMenu,
+                ),
+              ),
+            ],
           ),
         ),
-      ),
+      ],
     );
   }
 }
 
-class _NavTile extends StatelessWidget {
+// ── Tile de la barre flottante ────────────────────────────────────────────────
+class _FloatingNavTile extends StatelessWidget {
   final _NavData item;
   final bool isActive;
   final VoidCallback onTap;
 
-  const _NavTile({
+  const _FloatingNavTile({
     required this.item,
     required this.isActive,
     required this.onTap,
@@ -447,96 +559,311 @@ class _NavTile extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? LinearGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(0.5),
+                    AppTheme.accent.withOpacity(0.3),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: isActive
+              ? [BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.5),
+                  blurRadius: 12,
+                )]
+              : [],
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Icône avec glow actif ─────────────────────────────────
             Stack(
-              alignment: Alignment.center,
               clipBehavior: Clip.none,
+              alignment: Alignment.center,
               children: [
-                // Glow pill derrière l'icône active
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: isActive ? 36 : 0,
-                  height: isActive ? 24 : 0,
-                  decoration: BoxDecoration(
-                    gradient: isActive ? LinearGradient(
-                      colors: [AppTheme.primary.withOpacity(0.55), AppTheme.accent.withOpacity(0.35)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ) : null,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: isActive ? [
-                      BoxShadow(color: AppTheme.primary.withOpacity(0.55), blurRadius: 10),
-                    ] : [],
-                  ),
+                Icon(
+                  isActive ? item.activeIcon : item.icon,
+                  size: 22,
+                  color: isActive ? Colors.white : const Color(0xFF64748B),
                 ),
-                // Icône + badge
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Icon(
-                      isActive ? item.activeIcon : item.icon,
-                      size: 19,
-                      color: isActive ? Colors.white : const Color(0xFF64748B),
-                    ),
-                    if (item.badge > 0)
-                      Positioned(
-                        top: -4, right: -7,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.errorGradient,
-                            borderRadius: BorderRadius.circular(6),
-                            boxShadow: [BoxShadow(color: AppTheme.error.withOpacity(0.5), blurRadius: 5)],
-                          ),
-                          child: Text(
-                            item.badge > 9 ? '9+' : '${item.badge}',
-                            style: const TextStyle(color: Colors.white, fontSize: 7.5, fontWeight: FontWeight.w800),
-                          ),
+                if (item.badge > 0)
+                  Positioned(
+                    top: -5, right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [BoxShadow(
+                          color: Colors.red.withOpacity(0.5),
+                          blurRadius: 6,
+                        )],
+                      ),
+                      child: Text(
+                        item.badge > 9 ? '9+' : '${item.badge}',
+                        style: const TextStyle(
+                          color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800,
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 3),
-            // ── Label ─────────────────────────────────────────────────
             Text(
               item.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 8,
+                fontSize: 9,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                color: isActive ? Colors.white : const Color(0xFF475569),
-                letterSpacing: isActive ? 0.2 : 0,
-              ),
-            ),
-            const SizedBox(height: 3),
-            // ── Barre indicateur ───────────────────────────────────────
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              width: isActive ? 14 : 0,
-              height: 2,
-              decoration: BoxDecoration(
-                gradient: isActive ? const LinearGradient(
-                  colors: [AppTheme.primary, AppTheme.accent],
-                ) : null,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: isActive
-                    ? [BoxShadow(color: AppTheme.primary.withOpacity(0.7), blurRadius: 6)]
-                    : [],
+                color: isActive ? Colors.white : const Color(0xFF64748B),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Bouton "Plus" ─────────────────────────────────────────────────────────────
+class _MoreButton extends StatelessWidget {
+  final bool isActive;
+  final bool isOpen;
+  final int badge;
+  final VoidCallback onTap;
+
+  const _MoreButton({
+    required this.isActive,
+    required this.isOpen,
+    required this.badge,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? LinearGradient(
+                  colors: [
+                    AppTheme.primary.withOpacity(0.5),
+                    AppTheme.accent.withOpacity(0.3),
+                  ],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: isActive
+              ? [BoxShadow(
+                  color: AppTheme.primary.withOpacity(0.5),
+                  blurRadius: 12,
+                )]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                AnimatedRotation(
+                  turns: isOpen ? 0.125 : 0, // Rotation 45° quand ouvert
+                  duration: const Duration(milliseconds: 280),
+                  child: Icon(
+                    Icons.grid_view_rounded,
+                    size: 22,
+                    color: isActive ? Colors.white : const Color(0xFF64748B),
+                  ),
+                ),
+                if (badge > 0)
+                  Positioned(
+                    top: -5, right: -8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badge > 9 ? '9+' : '$badge',
+                        style: const TextStyle(
+                          color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            Text(
+              'Plus',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                color: isActive ? Colors.white : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Menu "Plus" (panneau qui monte) ──────────────────────────────────────────
+class _MoreMenu extends StatelessWidget {
+  final List<_NavData> items;
+  final int startIndex;
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  const _MoreMenu({
+    required this.items,
+    required this.startIndex,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1A2744)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Titre
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Menu',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          // Items en grille 2 colonnes
+          GridView.count(
+            shrinkWrap: true,
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 3.2,
+            physics: const NeverScrollableScrollPhysics(),
+            children: items.asMap().entries.map((e) {
+              final i = startIndex + e.key;
+              final item = e.value;
+              final isActive = i == currentIndex;
+              return GestureDetector(
+                onTap: () => onTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: isActive
+                        ? LinearGradient(
+                            colors: [
+                              AppTheme.primary.withOpacity(0.5),
+                              AppTheme.accent.withOpacity(0.3),
+                            ],
+                          )
+                        : LinearGradient(
+                            colors: [
+                              Colors.white.withOpacity(0.06),
+                              Colors.white.withOpacity(0.03),
+                            ],
+                          ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: isActive
+                        ? Border.all(color: AppTheme.primary.withOpacity(0.5))
+                        : Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Row(
+                    children: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            isActive ? item.activeIcon : item.icon,
+                            size: 18,
+                            color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                          ),
+                          if (item.badge > 0)
+                            Positioned(
+                              top: -4, right: -6,
+                              child: Container(
+                                width: 14, height: 14,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    item.badge > 9 ? '9+' : '${item.badge}',
+                                    style: const TextStyle(
+                                      color: Colors.white, fontSize: 7, fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          style: TextStyle(
+                            color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                            fontSize: 12,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }
