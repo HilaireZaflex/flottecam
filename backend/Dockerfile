@@ -37,16 +37,21 @@ WORKDIR /var/www/html
 COPY . .
 
 # Installer les dépendances PHP (sans dev)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-scripts
 
 # Permissions storage + bootstrap/cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
 
 # Config Nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-# Config Supervisor (gère nginx + php-fpm ensemble)
+# Config Supervisor
 COPY docker/supervisord.conf /etc/supervisord.conf
 
 # Script de démarrage
