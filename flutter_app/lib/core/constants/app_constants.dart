@@ -10,7 +10,7 @@ class AppConstants {
   // 🚀 PRODUCTION Railway (à remplir après déploiement backend) :
   // static const String baseUrl = 'https://flottecam-backend.up.railway.app/api';
 
-  static const String baseUrl = 'http://172.20.10.4:8000/api'; // ← Changer selon env
+  static const String baseUrl = 'https://flottecam-production.up.railway.app/api'; // ✅ Production Railway
 
   // Storage Keys
   static const String tokenKey   = 'fleet_auth_token';
