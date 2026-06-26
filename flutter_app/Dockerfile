@@ -1,26 +1,10 @@
-# ── Stage 1 : Build Flutter Web ───────────────────────────────────────────────
-FROM ghcr.io/cirruslabs/flutter:stable AS builder
-
-WORKDIR /app
-
-# Copier les fichiers du projet
-COPY . .
-
-# Installer les dépendances
-RUN flutter pub get
-
-# Builder la PWA Flutter Web (optimisée production)
-RUN flutter build web \
-    --release \
-    --no-tree-shake-icons \
-    --no-wasm-dry-run \
-    --dart-define=FLUTTER_WEB_USE_SKIA=true
-
-# ── Stage 2 : Servir avec Nginx ───────────────────────────────────────────────
+# ── Servir directement le build pré-compilé avec Nginx ───────────────────────
+# Le build Flutter Web est fait localement et inclus dans le repo (build/web/)
+# → Déploiement Railway ultra-rapide (30s au lieu de 10min)
 FROM nginx:alpine
 
-# Copier le build Flutter Web
-COPY --from=builder /app/build/web /usr/share/nginx/html
+# Copier le build Flutter Web pré-compilé
+COPY build/web /usr/share/nginx/html
 
 # Config Nginx pour PWA (SPA routing)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
