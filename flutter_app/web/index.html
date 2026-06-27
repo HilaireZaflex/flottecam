@@ -159,7 +159,73 @@
   </div>
 
   <script>
-    // ── Masquer le splash quand Flutter est prêt ──────────────────────────
+    // ══════════════════════════════════════════════════════════════════════
+    // AUTO-UPDATE FlotteCam PWA — iOS & Android
+    // Vérifie la version AVANT le démarrage de Flutter
+    // Si nouvelle version → force le rechargement complet
+    // ══════════════════════════════════════════════════════════════════════
+    (function() {
+      var VERSION_KEY = 'fc_build';
+
+      function startFlutter() {
+        // Désinstaller anciens Service Workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(r) { r.unregister(); });
+          });
+        }
+        // Charger Flutter
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      function forceReload() {
+        // Vider tous les caches disponibles
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            names.forEach(function(name) { caches.delete(name); });
+          });
+        }
+        // Recharger avec cache-busting dans l'URL
+        var url = window.location.href.split('?')[0];
+        window.location.replace(url + '?v=' + Date.now());
+      }
+
+      // Récupérer la version serveur (toujours frais, jamais en cache)
+      fetch('/version.json?_=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var serverBuild = String(data.build_number || '1');
+        var localBuild  = localStorage.getItem(VERSION_KEY);
+
+        console.log('[FC] Build local=' + localBuild + ' serveur=' + serverBuild);
+
+        if (!localBuild) {
+          // Première installation → sauvegarder
+          localStorage.setItem(VERSION_KEY, serverBuild);
+          startFlutter();
+        } else if (localBuild !== serverBuild) {
+          // NOUVELLE VERSION → mettre à jour + recharger
+          console.log('[FC] Nouvelle version ' + serverBuild + ' → rechargement');
+          localStorage.setItem(VERSION_KEY, serverBuild);
+          forceReload();
+        } else {
+          // Même version → démarrer normalement
+          startFlutter();
+        }
+      })
+      .catch(function() {
+        // Pas de connexion → démarrer quand même
+        startFlutter();
+      });
+    })();
+
+    // ── Masquer le splash quand Flutter est prêt ─────────────────────────
     window.addEventListener('flutter-first-frame', function() {
       var splash = document.getElementById('splash');
       if (splash) {
@@ -167,19 +233,6 @@
         setTimeout(function() { splash.remove(); }, 500);
       }
     });
-
-    // ── Désinstaller tout ancien Service Worker Flutter ───────────────────
-    // Solution définitive au problème de cache sur iOS Safari
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (var reg of registrations) {
-          reg.unregister();
-          console.log('[FlotteCam] Ancien SW désinstallé');
-        }
-      });
-    }
   </script>
-
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
