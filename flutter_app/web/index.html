@@ -168,11 +168,31 @@
       var VERSION_KEY = 'fc_build';
 
       function startFlutter() {
-        // Désinstaller anciens Service Workers
+        // ── Désactiver définitivement le Service Worker Flutter ────────
+        // Le SW Flutter cause des erreurs InvalidStateError en boucle
+        // On override navigator.serviceWorker.register pour bloquer toute inscription
         if ('serviceWorker' in navigator) {
+          // 1. Désinscrire tous les SW existants
           navigator.serviceWorker.getRegistrations().then(function(regs) {
             regs.forEach(function(r) { r.unregister(); });
           });
+          // 2. Vider tous les caches SW
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(k) { caches.delete(k); });
+            });
+          }
+          // 3. Bloquer flutter_bootstrap.js d'enregistrer un nouveau SW
+          //    en remplaçant navigator.serviceWorker.register par un no-op
+          try {
+            Object.defineProperty(navigator.serviceWorker, 'register', {
+              value: function() {
+                return Promise.resolve({ scope: '/', installing: null });
+              },
+              writable: false,
+              configurable: false,
+            });
+          } catch(e) {}
         }
         // Charger Flutter
         var s = document.createElement('script');
