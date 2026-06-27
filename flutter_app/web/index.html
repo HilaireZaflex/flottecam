@@ -168,23 +168,31 @@
     (function() {
       var VERSION_KEY = 'fc_build';
 
-      // ── Bloquer IMMÉDIATEMENT tout enregistrement SW ───────────────
-      // Doit être fait AVANT flutter_bootstrap.js
+      // ── Mocker le Service Worker AVANT flutter_bootstrap.js ──────────
+      // Flutter appelle navigator.serviceWorker.getRegistration() et .register()
+      // On remplace par un mock complet qui ne fait rien mais ne plante pas
       if ('serviceWorker' in navigator) {
+        // D'abord désinscrire les SW existants corrompus
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+        }).catch(function(){});
+
+        // Remplacer register et getRegistration par des no-ops
+        var swMock = {
+          register: function() { return Promise.resolve({ scope: '/', installing: null, waiting: null, active: null, addEventListener: function(){} }); },
+          getRegistration: function() { return Promise.resolve(undefined); },
+          getRegistrations: function() { return Promise.resolve([]); },
+          addEventListener: function() {},
+          removeEventListener: function() {},
+          controller: null,
+          ready: Promise.resolve({ scope: '/', active: { postMessage: function(){} } }),
+        };
         try {
           Object.defineProperty(navigator, 'serviceWorker', {
-            get: function() { return undefined; },
+            get: function() { return swMock; },
             configurable: true,
           });
-        } catch(e) {
-          // Fallback si defineProperty échoue
-          try {
-            Object.defineProperty(navigator.serviceWorker, 'register', {
-              value: function() { return Promise.resolve({}); },
-              writable: true, configurable: true,
-            });
-          } catch(e2) {}
-        }
+        } catch(e) {}
       }
 
       // ── Vider les caches corrompus ─────────────────────────────────
