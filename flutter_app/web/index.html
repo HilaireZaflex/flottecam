@@ -240,9 +240,11 @@
     // Fonctionne sur iOS PWA, Android PWA, Chrome, Safari
     // ══════════════════════════════════════════════════════════════════════
     (function() {
-      var PIN_KEY      = 'fc_has_pin';
-      var PIN_HASH_KEY = 'fc_pin_hash';
-      var ATTEMPTS_KEY = 'fc_pin_attempts';
+      // ⚠️ SharedPreferences Flutter Web ajoute le préfixe "flutter."
+      // Les clés Dart 'fc_has_pin' deviennent 'flutter.fc_has_pin' dans localStorage
+      var PIN_KEY      = 'flutter.fc_has_pin';
+      var PIN_HASH_KEY = 'flutter.fc_pin_hash';
+      var ATTEMPTS_KEY = 'flutter.fc_pin_attempts';
       var MAX_ATTEMPTS = 3;
       var enteredPin   = '';
       var overlay      = null;
@@ -421,8 +423,8 @@
             localStorage.removeItem(PIN_HASH_KEY);
             localStorage.removeItem(PIN_KEY);
             localStorage.removeItem(ATTEMPTS_KEY);
-            localStorage.removeItem('fc_token');
-            localStorage.removeItem('fc_user');
+            localStorage.removeItem('flutter.fc_token');
+            localStorage.removeItem('flutter.fc_user');
             hidePinOverlay();
             window.location.reload();
           } else {
@@ -442,6 +444,9 @@
         localStorage.removeItem(PIN_KEY);
         localStorage.removeItem(ATTEMPTS_KEY);
         hidePinOverlay();
+        // Déconnecter proprement
+        localStorage.removeItem('flutter.fc_token');
+        localStorage.removeItem('flutter.fc_user');
         window.location.reload();
       };
 
