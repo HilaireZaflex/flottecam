@@ -160,88 +160,72 @@
 
   <script>
     // ══════════════════════════════════════════════════════════════════════
-    // AUTO-UPDATE FlotteCam PWA — iOS & Android
-    // Vérifie la version AVANT le démarrage de Flutter
-    // Si nouvelle version → force le rechargement complet
+    // FLOTTECAM PWA — Initialisation
+    // 1. Désinstaller SW corrompu (synchrone, avant Flutter)
+    // 2. Vérifier version → recharger si nouvelle
+    // 3. Démarrer Flutter
     // ══════════════════════════════════════════════════════════════════════
     (function() {
       var VERSION_KEY = 'fc_build';
 
-      function startFlutter() {
-        // ── Désactiver définitivement le Service Worker Flutter ────────
-        // Le SW Flutter cause des erreurs InvalidStateError en boucle
-        // On override navigator.serviceWorker.register pour bloquer toute inscription
-        if ('serviceWorker' in navigator) {
-          // 1. Désinscrire tous les SW existants
-          navigator.serviceWorker.getRegistrations().then(function(regs) {
-            regs.forEach(function(r) { r.unregister(); });
+      // ── Bloquer IMMÉDIATEMENT tout enregistrement SW ───────────────
+      // Doit être fait AVANT flutter_bootstrap.js
+      if ('serviceWorker' in navigator) {
+        try {
+          Object.defineProperty(navigator, 'serviceWorker', {
+            get: function() { return undefined; },
+            configurable: true,
           });
-          // 2. Vider tous les caches SW
-          if ('caches' in window) {
-            caches.keys().then(function(keys) {
-              keys.forEach(function(k) { caches.delete(k); });
-            });
-          }
-          // 3. Bloquer flutter_bootstrap.js d'enregistrer un nouveau SW
-          //    en remplaçant navigator.serviceWorker.register par un no-op
+        } catch(e) {
+          // Fallback si defineProperty échoue
           try {
             Object.defineProperty(navigator.serviceWorker, 'register', {
-              value: function() {
-                return Promise.resolve({ scope: '/', installing: null });
-              },
-              writable: false,
-              configurable: false,
+              value: function() { return Promise.resolve({}); },
+              writable: true, configurable: true,
             });
-          } catch(e) {}
+          } catch(e2) {}
         }
-        // Charger Flutter
+      }
+
+      // ── Vider les caches corrompus ─────────────────────────────────
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(k) { caches.delete(k); });
+        });
+      }
+
+      function loadFlutter() {
         var s = document.createElement('script');
         s.src = 'flutter_bootstrap.js';
         s.async = true;
         document.body.appendChild(s);
       }
 
-      function forceReload() {
-        // Vider tous les caches disponibles
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            names.forEach(function(name) { caches.delete(name); });
-          });
-        }
-        // Recharger avec cache-busting dans l'URL
-        var url = window.location.href.split('?')[0];
-        window.location.replace(url + '?v=' + Date.now());
-      }
-
-      // Récupérer la version serveur (toujours frais, jamais en cache)
+      // ── Vérifier version serveur ───────────────────────────────────
       fetch('/version.json?_=' + Date.now(), {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        headers: { 'Cache-Control': 'no-cache' }
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var serverBuild = String(data.build_number || '1');
         var localBuild  = localStorage.getItem(VERSION_KEY);
-
         console.log('[FC] Build local=' + localBuild + ' serveur=' + serverBuild);
 
-        if (!localBuild) {
-          // Première installation → sauvegarder
+        if (localBuild && localBuild !== serverBuild) {
+          // Nouvelle version → sauvegarder et recharger PROPREMENT (sans ?v=)
+          console.log('[FC] Nouvelle version → rechargement');
           localStorage.setItem(VERSION_KEY, serverBuild);
-          startFlutter();
-        } else if (localBuild !== serverBuild) {
-          // NOUVELLE VERSION → mettre à jour + recharger
-          console.log('[FC] Nouvelle version ' + serverBuild + ' → rechargement');
-          localStorage.setItem(VERSION_KEY, serverBuild);
-          forceReload();
-        } else {
-          // Même version → démarrer normalement
-          startFlutter();
+          // Recharger sans paramètre pour éviter la boucle
+          window.location.replace(window.location.pathname);
+          return;
         }
+        // Première visite ou même version → démarrer
+        localStorage.setItem(VERSION_KEY, serverBuild);
+        loadFlutter();
       })
       .catch(function() {
-        // Pas de connexion → démarrer quand même
-        startFlutter();
+        loadFlutter();
       });
     })();
 
