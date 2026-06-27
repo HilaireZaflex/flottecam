@@ -17,22 +17,39 @@ class AuthNotifier extends AsyncNotifier<UserModel?> {
   Future<UserModel?> build() async {
     final token    = await _storage.read(key: AppConstants.tokenKey);
     final userJson = await _storage.read(key: AppConstants.userKey);
+
     if (token != null && userJson != null) {
       try {
-        // Vérifier que le token est toujours valide côté backend
-        final api = ref.read(apiClientProvider);
-        final response = await api.get('/auth/me');
-        final user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
-        // Mettre à jour le cache local avec les données fraîches
-        await _storage.write(key: AppConstants.userKey, value: jsonEncode(user.toJson()));
+        // Charger l'utilisateur depuis le cache local immédiatement
+        final user = UserModel.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+
+        // Vérifier le token en arrière-plan (sans bloquer l'UI)
+        _verifyTokenInBackground(token);
+
         return user;
       } catch (_) {
-        // Token invalide (ex: base réinitialisée) — nettoyer le stockage
         await _storage.delete(key: AppConstants.tokenKey);
         await _storage.delete(key: AppConstants.userKey);
       }
     }
     return null;
+  }
+
+  /// Vérifie le token en arrière-plan sans bloquer le démarrage
+  Future<void> _verifyTokenInBackground(String token) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final response = await api.get('/auth/me');
+      final user = UserModel.fromJson(response.data['user'] as Map<String, dynamic>);
+      await _storage.write(key: AppConstants.userKey, value: jsonEncode(user.toJson()));
+      // Mettre à jour l'état silencieusement
+      state = AsyncData(user);
+    } catch (e) {
+      // Token expiré → déconnecter proprement
+      await _storage.delete(key: AppConstants.tokenKey);
+      await _storage.delete(key: AppConstants.userKey);
+      state = const AsyncData(null);
+    }
   }
 
   Future<void> login(String email, String password) async {
