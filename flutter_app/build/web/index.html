@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <base href="/">
+  <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
@@ -220,15 +220,8 @@
         var localBuild  = localStorage.getItem(VERSION_KEY);
         console.log('[FC] Build local=' + localBuild + ' serveur=' + serverBuild);
 
-        if (localBuild && localBuild !== serverBuild) {
-          // Nouvelle version → sauvegarder et recharger PROPREMENT (sans ?v=)
-          console.log('[FC] Nouvelle version → rechargement');
-          localStorage.setItem(VERSION_KEY, serverBuild);
-          // Recharger sans paramètre pour éviter la boucle
-          window.location.replace(window.location.pathname);
-          return;
-        }
-        // Première visite ou même version → démarrer
+        // Toujours sauvegarder la version et démarrer Flutter directement
+        // On ne recharge PLUS la page — le no-cache Nginx garantit les fichiers frais
         localStorage.setItem(VERSION_KEY, serverBuild);
         loadFlutter();
       })
