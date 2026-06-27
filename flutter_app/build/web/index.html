@@ -235,59 +235,237 @@
     });
 
     // ══════════════════════════════════════════════════════════════════════
-    // VERROUILLAGE PIN — iOS PWA (visibilitychange)
-    // Sur iOS PWA, AppLifecycleState Flutter ne marche pas
-    // On utilise l'API Web visibilitychange qui est 100% fiable sur iOS
+    // VERROUILLAGE PIN HTML — Style WhatsApp
+    // 100% JavaScript/HTML — indépendant de Flutter
+    // Fonctionne sur iOS PWA, Android PWA, Chrome, Safari
     // ══════════════════════════════════════════════════════════════════════
     (function() {
-      var LOCK_DELAY = 0; // ms — 0 = immédiat dès qu'on quitte
-      var pausedAt   = null;
-      var PIN_KEY    = 'fc_has_pin';
+      var PIN_KEY      = 'fc_has_pin';
+      var PIN_HASH_KEY = 'fc_pin_hash';
+      var ATTEMPTS_KEY = 'fc_pin_attempts';
+      var MAX_ATTEMPTS = 3;
+      var enteredPin   = '';
+      var overlay      = null;
 
-      document.addEventListener('visibilitychange', function() {
-        if (document.hidden) {
-          // App mise en arrière-plan → noter l'heure
-          pausedAt = Date.now();
-        } else {
-          // App revenue au premier plan
-          if (pausedAt === null) return;
-          var elapsed = Date.now() - pausedAt;
-          pausedAt = null;
+      // ── Vérifier si PIN activé ──────────────────────────────────────
+      function hasPinEnabled() {
+        return localStorage.getItem(PIN_KEY) === 'true';
+      }
 
-          // Vérifier si l'utilisateur a un PIN
-          var hasPin = localStorage.getItem(PIN_KEY) === 'true';
-          if (!hasPin) return;
-
-          if (elapsed >= LOCK_DELAY) {
-            // Envoyer un message à Flutter pour aller à l'écran PIN
-            if (window._flutterShowPin) {
-              window._flutterShowPin();
-            } else {
-              // Flutter pas encore prêt → stocker la demande
-              window._pendingPinRequest = true;
-            }
-          }
+      // ── Hash du PIN (même algo que Dart) ───────────────────────────
+      function hashPin(pin) {
+        var salt = 'FlotteCam2026#';
+        var combined = salt + pin + salt;
+        var hash = 0;
+        for (var i = 0; i < combined.length; i++) {
+          hash = ((hash << 5) - hash + combined.charCodeAt(i)) & 0xFFFFFFFF;
         }
-      });
+        return (hash >>> 0).toString(16).padStart(8, '0');
+      }
 
-      // Écouter aussi pagehide/pageshow (iOS Safari)
-      window.addEventListener('pagehide', function() {
-        pausedAt = Date.now();
-      });
+      // ── Créer l'overlay PIN ────────────────────────────────────────
+      function showPinOverlay() {
+        if (overlay) return; // déjà affiché
+        enteredPin = '';
 
-      window.addEventListener('pageshow', function(e) {
-        if (pausedAt === null) return;
-        var elapsed = Date.now() - pausedAt;
-        pausedAt = null;
-        var hasPin = localStorage.getItem(PIN_KEY) === 'true';
-        if (hasPin && elapsed >= LOCK_DELAY) {
-          if (window._flutterShowPin) {
-            window._flutterShowPin();
+        overlay = document.createElement('div');
+        overlay.id = 'pin-overlay';
+        overlay.innerHTML = `
+          <div style="
+            position:fixed;inset:0;
+            background:linear-gradient(135deg,#0F172A 0%,#1A2744 100%);
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:space-between;padding:60px 0 40px;
+            z-index:99999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+          ">
+            <!-- Logo -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+              <div style="
+                width:72px;height:72px;border-radius:20px;
+                background:linear-gradient(135deg,#1B4FD8,#3B6EF0);
+                display:flex;align-items:center;justify-content:center;
+                box-shadow:0 10px 30px rgba(27,79,216,0.5);
+              ">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="white">
+                  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+              </div>
+              <div style="text-align:center;">
+                <div style="color:white;font-size:22px;font-weight:800;letter-spacing:-0.5px;">FlotteCam</div>
+                <div style="color:rgba(255,255,255,0.5);font-size:14px;margin-top:4px;">Entrez votre code PIN</div>
+              </div>
+            </div>
+
+            <!-- Points PIN -->
+            <div>
+              <div id="pin-dots" style="display:flex;gap:20px;justify-content:center;margin-bottom:16px;">
+                ${[0,1,2,3].map(function(i){ return '<div id="dot-'+i+'" style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.2);transition:all 0.15s;"></div>'; }).join('')}
+              </div>
+              <div id="pin-error" style="color:#EF4444;font-size:13px;text-align:center;min-height:20px;font-weight:500;"></div>
+            </div>
+
+            <!-- Clavier -->
+            <div style="width:100%;max-width:280px;padding:0 20px;">
+              ${[['1','2','3'],['4','5','6'],['7','8','9'],['','0','⌫']].map(function(row){
+                return '<div style="display:flex;justify-content:space-between;margin-bottom:12px;">' +
+                  row.map(function(k){
+                    if(!k) return '<div style="width:72px;height:66px;"></div>';
+                    return '<button onclick="window._pinKey(\''+k+'\')" style="'+
+                      'width:72px;height:66px;border-radius:16px;border:1px solid rgba(255,255,255,0.1);'+
+                      'background:rgba(255,255,255,0.08);color:white;font-size:'+(k==='⌫'?'20':'22')+'px;'+
+                      'font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;'+
+                      'display:flex;align-items:center;justify-content:center;">'+k+'</button>';
+                  }).join('') +
+                '</div>';
+              }).join('')}
+
+              <!-- Bouton identifiants -->
+              <div style="text-align:center;margin-top:8px;">
+                <button onclick="window._pinUsePassword()" style="
+                  background:none;border:none;color:rgba(255,255,255,0.35);
+                  font-size:13px;cursor:pointer;padding:8px;
+                ">Utiliser mes identifiants</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+      }
+
+      // ── Masquer l'overlay ──────────────────────────────────────────
+      function hidePinOverlay() {
+        if (overlay) {
+          overlay.remove();
+          overlay = null;
+        }
+      }
+
+      // ── Mettre à jour les points visuels ───────────────────────────
+      function updateDots() {
+        for (var i = 0; i < 4; i++) {
+          var dot = document.getElementById('dot-' + i);
+          if (!dot) continue;
+          if (i < enteredPin.length) {
+            dot.style.background = '#1B4FD8';
+            dot.style.width = '20px';
+            dot.style.height = '20px';
+            dot.style.boxShadow = '0 0 12px rgba(27,79,216,0.8)';
           } else {
-            window._pendingPinRequest = true;
+            dot.style.background = 'rgba(255,255,255,0.2)';
+            dot.style.width = '16px';
+            dot.style.height = '16px';
+            dot.style.boxShadow = 'none';
           }
         }
+      }
+
+      // ── Gestion des touches ────────────────────────────────────────
+      window._pinKey = function(key) {
+        if (key === '⌫') {
+          enteredPin = enteredPin.slice(0, -1);
+          updateDots();
+          return;
+        }
+        if (enteredPin.length >= 4) return;
+        enteredPin += key;
+        updateDots();
+
+        if (enteredPin.length === 4) {
+          setTimeout(function() { verifyPin(); }, 150);
+        }
+      };
+
+      // ── Vérifier le PIN ────────────────────────────────────────────
+      function verifyPin() {
+        var stored   = localStorage.getItem(PIN_HASH_KEY);
+        var entered  = hashPin(enteredPin);
+        var attempts = parseInt(localStorage.getItem(ATTEMPTS_KEY) || '0');
+
+        if (entered === stored) {
+          // ✅ Correct
+          localStorage.setItem(ATTEMPTS_KEY, '0');
+          hidePinOverlay();
+          // Informer Flutter que le PIN est validé
+          if (window._flutterShowPin) window._flutterShowPin();
+        } else {
+          // ❌ Incorrect
+          attempts++;
+          localStorage.setItem(ATTEMPTS_KEY, attempts.toString());
+          var remaining = MAX_ATTEMPTS - attempts;
+
+          // Animation erreur
+          var dots = document.getElementById('pin-dots');
+          if (dots) {
+            dots.style.animation = 'none';
+            dots.offsetHeight; // reflow
+            dots.style.transition = 'transform 0.05s';
+            var shakes = 0;
+            var shakeInterval = setInterval(function() {
+              dots.style.transform = shakes % 2 === 0 ? 'translateX(10px)' : 'translateX(-10px)';
+              shakes++;
+              if (shakes > 5) {
+                clearInterval(shakeInterval);
+                dots.style.transform = 'translateX(0)';
+              }
+            }, 60);
+          }
+
+          // Mettre les points en rouge
+          for (var i = 0; i < 4; i++) {
+            var dot = document.getElementById('dot-' + i);
+            if (dot) dot.style.background = '#EF4444';
+          }
+
+          if (remaining <= 0) {
+            // Trop de tentatives → déconnecter
+            localStorage.removeItem(PIN_HASH_KEY);
+            localStorage.removeItem(PIN_KEY);
+            localStorage.removeItem(ATTEMPTS_KEY);
+            localStorage.removeItem('fc_token');
+            localStorage.removeItem('fc_user');
+            hidePinOverlay();
+            window.location.reload();
+          } else {
+            var errEl = document.getElementById('pin-error');
+            if (errEl) errEl.textContent = 'Code incorrect — ' + remaining + ' essai' + (remaining > 1 ? 's' : '') + ' restant' + (remaining > 1 ? 's' : '');
+            setTimeout(function() {
+              enteredPin = '';
+              updateDots();
+            }, 600);
+          }
+        }
+      }
+
+      // ── Utiliser identifiants ──────────────────────────────────────
+      window._pinUsePassword = function() {
+        localStorage.removeItem(PIN_HASH_KEY);
+        localStorage.removeItem(PIN_KEY);
+        localStorage.removeItem(ATTEMPTS_KEY);
+        hidePinOverlay();
+        window.location.reload();
+      };
+
+      // ── Détecter quand l'app passe en arrière-plan ─────────────────
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && hasPinEnabled()) {
+          showPinOverlay();
+        }
       });
+
+      // iOS Safari PWA — pagehide/pageshow
+      window.addEventListener('pageshow', function() {
+        if (hasPinEnabled()) showPinOverlay();
+      });
+
+      // Focus (retour depuis autre app)
+      window.addEventListener('focus', function() {
+        if (hasPinEnabled() && !overlay) showPinOverlay();
+      });
+
+      // Exposer pour Flutter (après login + création PIN)
+      window._hidePinOverlay = hidePinOverlay;
+      window._showPinOverlay = showPinOverlay;
+
     })();
   </script>
 </body>
