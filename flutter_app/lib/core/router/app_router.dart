@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/pin_screen.dart';
+import '../../features/auth/presentation/screens/create_pin_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/gps/presentation/screens/gps_map_screen.dart';
 import '../../features/gps/presentation/screens/truck_tracking_screen.dart';
@@ -23,22 +25,37 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/reports/presentation/screens/reports_screen.dart';
 import '../widgets/main_scaffold.dart';
+import '../services/pin_service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
     initialLocation: '/login',
-    redirect: (context, state) {
+    redirect: (context, state) async {
       if (authState.isLoading) return null;
-      final isLoggedIn  = authState.hasValue && authState.value != null;
-      final isAuthRoute = ['/login', '/register'].contains(state.matchedLocation);
+
+      final isLoggedIn = authState.hasValue && authState.value != null;
+      final loc        = state.matchedLocation;
+      final isAuthRoute = ['/login', '/register', '/pin', '/create-pin']
+          .contains(loc);
+
+      // Non connecté → login
       if (!isLoggedIn && !isAuthRoute) return '/login';
-      if (isLoggedIn && isAuthRoute)   return '/dashboard';
+
+      // Connecté + route auth → vérifier PIN
+      if (isLoggedIn && (loc == '/login' || loc == '/register')) {
+        final pinSvc  = ref.read(pinServiceProvider);
+        final hasPin  = await pinSvc.hasPin();
+        return hasPin ? '/pin' : '/create-pin';
+      }
+
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/login',      builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/pin',        builder: (_, __) => const PinScreen()),
+      GoRoute(path: '/create-pin', builder: (_, __) => const CreatePinScreen()),
 
       // ── Routes sans navbar (détail / création) ──────────────────────────────
       GoRoute(
