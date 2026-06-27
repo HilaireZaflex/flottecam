@@ -233,6 +233,62 @@
         setTimeout(function() { splash.remove(); }, 500);
       }
     });
+
+    // ══════════════════════════════════════════════════════════════════════
+    // VERROUILLAGE PIN — iOS PWA (visibilitychange)
+    // Sur iOS PWA, AppLifecycleState Flutter ne marche pas
+    // On utilise l'API Web visibilitychange qui est 100% fiable sur iOS
+    // ══════════════════════════════════════════════════════════════════════
+    (function() {
+      var LOCK_DELAY = 0; // ms — 0 = immédiat dès qu'on quitte
+      var pausedAt   = null;
+      var PIN_KEY    = 'fc_has_pin';
+
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+          // App mise en arrière-plan → noter l'heure
+          pausedAt = Date.now();
+        } else {
+          // App revenue au premier plan
+          if (pausedAt === null) return;
+          var elapsed = Date.now() - pausedAt;
+          pausedAt = null;
+
+          // Vérifier si l'utilisateur a un PIN
+          var hasPin = localStorage.getItem(PIN_KEY) === 'true';
+          if (!hasPin) return;
+
+          if (elapsed >= LOCK_DELAY) {
+            // Envoyer un message à Flutter pour aller à l'écran PIN
+            if (window._flutterShowPin) {
+              window._flutterShowPin();
+            } else {
+              // Flutter pas encore prêt → stocker la demande
+              window._pendingPinRequest = true;
+            }
+          }
+        }
+      });
+
+      // Écouter aussi pagehide/pageshow (iOS Safari)
+      window.addEventListener('pagehide', function() {
+        pausedAt = Date.now();
+      });
+
+      window.addEventListener('pageshow', function(e) {
+        if (pausedAt === null) return;
+        var elapsed = Date.now() - pausedAt;
+        pausedAt = null;
+        var hasPin = localStorage.getItem(PIN_KEY) === 'true';
+        if (hasPin && elapsed >= LOCK_DELAY) {
+          if (window._flutterShowPin) {
+            window._flutterShowPin();
+          } else {
+            window._pendingPinRequest = true;
+          }
+        }
+      });
+    })();
   </script>
 </body>
 </html>

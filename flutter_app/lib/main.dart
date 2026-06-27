@@ -6,6 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/update_service.dart';
 import 'core/services/pin_service.dart';
+import 'core/services/web_lock_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 
 void main() async {
@@ -34,11 +35,26 @@ class _FlotteCamAppState extends ConsumerState<FlotteCamApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Initialiser le bridge JS → Flutter pour le verrouillage PIN sur iOS PWA
+    if (kIsWeb) {
+      WebLockService.init(() async {
+        final authState = ref.read(authStateProvider);
+        final isLoggedIn = authState.hasValue && authState.value != null;
+        if (!isLoggedIn) return;
+        final pinSvc = ref.read(pinServiceProvider);
+        final hasPin = await pinSvc.hasPin();
+        if (hasPin && mounted) {
+          ref.read(appRouterProvider).go('/pin');
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (kIsWeb) WebLockService.dispose();
     super.dispose();
   }
 
