@@ -66,10 +66,41 @@ class _TransportsScreenState extends ConsumerState<TransportsScreen> {
             tooltip: 'Filtres',
             onPressed: () => setState(() => _showFilters = !_showFilters),
           ),
-          IconButton(
-            icon: const Icon(Icons.add_circle_rounded, color: AppTheme.primaryColor),
-            tooltip: 'Nouveau transport',
-            onPressed: () => context.push('/transports/new'),
+          // ── Bouton Nouveau Voyage ──────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => context.push('/transports/new'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primary.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, color: Colors.white, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      'Nouveau',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -252,13 +283,7 @@ class _TransportsScreenState extends ConsumerState<TransportsScreen> {
         ),
       ]),
 
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/transports/new'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Nouveau'),
-      ),
+      // FAB supprimé — bouton "Nouveau" intégré dans l'AppBar
     );
   }
 }
