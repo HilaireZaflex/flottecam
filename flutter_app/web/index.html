@@ -435,8 +435,8 @@
             localStorage.removeItem(PIN_HASH_KEY);
             localStorage.removeItem(PIN_KEY);
             localStorage.removeItem(ATTEMPTS_KEY);
-            localStorage.removeItem('flutter.fc_token');
-            localStorage.removeItem('flutter.fc_user');
+            localStorage.removeItem('flutter.fleet_auth_token');
+            localStorage.removeItem('flutter.fleet_auth_user');
             hidePinOverlay();
             window.location.reload();
           } else {
@@ -457,8 +457,8 @@
         localStorage.removeItem(ATTEMPTS_KEY);
         hidePinOverlay();
         // Déconnecter proprement
-        localStorage.removeItem('flutter.fc_token');
-        localStorage.removeItem('flutter.fc_user');
+        localStorage.removeItem('flutter.fleet_auth_token');
+        localStorage.removeItem('flutter.fleet_auth_user');
         window.location.reload();
       };
 

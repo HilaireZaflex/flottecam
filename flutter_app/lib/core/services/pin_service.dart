@@ -11,7 +11,7 @@ final pinServiceProvider = Provider<PinService>((ref) {
 /// - Token API conservé → pas de reconnexion
 class PinService {
   static const _pinKey   = 'fc_pin_hash';
-  static const _hasPin   = 'fc_has_pin';
+  static const _hasPin   = 'fc_has_pin';   // ← Même clé que dans index.html JS
   static const _attempts = 'fc_pin_attempts';
   static const int maxAttempts = 3;
 
