@@ -158,8 +158,6 @@
     </div>
   </div>
 
-  <script src="flutter_bootstrap.js" async></script>
-
   <script>
     // ── Masquer le splash quand Flutter est prêt ──────────────────────────
     window.addEventListener('flutter-first-frame', function() {
@@ -170,44 +168,18 @@
       }
     });
 
-    // ── Service Worker + Mise à jour automatique ──────────────────────────
+    // ── Désinstaller tout ancien Service Worker Flutter ───────────────────
+    // Solution définitive au problème de cache sur iOS Safari
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('flutter_service_worker.js', {
-          scope: '/',
-          updateViaCache: 'none'  // ← Ne jamais utiliser le cache pour le SW
-        }).then(function(reg) {
-          console.log('[FlotteCam] Service Worker enregistré');
-
-          // Vérifier les mises à jour toutes les 60 secondes
-          setInterval(function() { reg.update(); }, 60000);
-
-          // Nouvelle version détectée → afficher bannière de mise à jour
-          reg.addEventListener('updatefound', function() {
-            var newWorker = reg.installing;
-            newWorker.addEventListener('statechange', function() {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Recharger AUTOMATIQUEMENT (silencieux, sans demander à l'utilisateur)
-                newWorker.postMessage({ type: 'SKIP_WAITING' });
-              }
-            });
-          });
-
-          // Quand le nouveau SW prend le contrôle → recharger la page
-          var refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            if (!refreshing) {
-              refreshing = true;
-              console.log('[FlotteCam] Nouvelle version détectée — rechargement...');
-              window.location.reload();
-            }
-          });
-
-        }).catch(function(err) {
-          console.warn('[FlotteCam] Service Worker échec:', err);
-        });
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var reg of registrations) {
+          reg.unregister();
+          console.log('[FlotteCam] Ancien SW désinstallé');
+        }
       });
     }
   </script>
+
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
