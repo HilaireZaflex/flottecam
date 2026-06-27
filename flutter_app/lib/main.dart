@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/update_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 
 void main() async {
@@ -12,6 +13,12 @@ void main() async {
   // Initialiser les données de localisation pour intl (DateFormat en français)
   await initializeDateFormatting('fr_FR', null);
   await initializeDateFormatting('fr', null);
+
+  // Vérifier les mises à jour automatiquement au démarrage (PWA uniquement)
+  // Si nouvelle version → recharge automatiquement sans intervention utilisateur
+  if (kIsWeb) {
+    await UpdateService.checkAndUpdate();
+  }
 
   runApp(const ProviderScope(child: FlotteCamApp()));
 }

@@ -26,6 +26,9 @@ dependencies:
   # Web Push Notifications
   web: ^1.1.0
 
+  # HTTP pour vérification de version
+  http: ^1.2.0
+
   # Social Auth (désactivé temporairement — nécessite config GoogleService-Info.plist)
   # google_sign_in: ^6.2.1
   # flutter_facebook_auth: ^6.1.1
