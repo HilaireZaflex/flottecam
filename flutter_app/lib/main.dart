@@ -5,33 +5,93 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/update_service.dart';
+import 'core/services/pin_service.dart';
 import 'features/auth/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialiser les données de localisation pour intl (DateFormat en français)
   await initializeDateFormatting('fr_FR', null);
   await initializeDateFormatting('fr', null);
-
-  // Vérifier les mises à jour automatiquement au démarrage (PWA uniquement)
-  // Si nouvelle version → recharge automatiquement sans intervention utilisateur
-  if (kIsWeb) {
-    await UpdateService.checkAndUpdate();
-  }
-
+  if (kIsWeb) await UpdateService.checkAndUpdate();
   runApp(const ProviderScope(child: FlotteCamApp()));
 }
 
-class FlotteCamApp extends ConsumerWidget {
+class FlotteCamApp extends ConsumerStatefulWidget {
   const FlotteCamApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FlotteCamApp> createState() => _FlotteCamAppState();
+}
+
+class _FlotteCamAppState extends ConsumerState<FlotteCamApp>
+    with WidgetsBindingObserver {
+  // Timestamp quand l'app est passée en arrière-plan
+  DateTime? _pausedAt;
+  // Délai avant de demander le PIN (30 secondes)
+  static const _lockDelay = Duration(seconds: 30);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        // App en arrière-plan → noter l'heure
+        _pausedAt = DateTime.now();
+        break;
+
+      case AppLifecycleState.resumed:
+        // App revenue au premier plan
+        _onAppResumed();
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  Future<void> _onAppResumed() async {
+    final authState = ref.read(authStateProvider);
+    final isLoggedIn = authState.hasValue && authState.value != null;
+    if (!isLoggedIn) return;
+
+    // Vérifier si l'app a été en arrière-plan assez longtemps
+    final pausedAt = _pausedAt;
+    if (pausedAt != null) {
+      final elapsed = DateTime.now().difference(pausedAt);
+      if (elapsed >= _lockDelay) {
+        // Assez longtemps → demander le PIN + vérifier mises à jour
+        final pinSvc = ref.read(pinServiceProvider);
+        final hasPin = await pinSvc.hasPin();
+        if (hasPin && mounted) {
+          // Sur web → vérifier aussi les mises à jour
+          if (kIsWeb) await UpdateService.checkAndUpdate();
+          // Naviguer vers l'écran PIN
+          ref.read(appRouterProvider).go('/pin');
+        }
+      }
+    }
+    _pausedAt = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
 
-    // Sur le Web, le splash HTML s'affiche déjà — on retourne juste un fond uni
-    // Sur mobile, on affiche le splash Flutter natif
     if (authState.isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -39,37 +99,23 @@ class FlotteCamApp extends ConsumerWidget {
         home: Scaffold(
           backgroundColor: kIsWeb ? AppTheme.primaryColor : Colors.white,
           body: kIsWeb
-              ? const SizedBox.shrink() // Le splash HTML est déjà affiché
+              ? const SizedBox.shrink()
               : const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo FlotteCam
                       _FlotteCamLogo(),
                       SizedBox(height: 24),
-                      Text(
-                        'FlotteCam',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.primaryColor,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
+                      Text('FlotteCam',
+                        style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800,
+                            color: AppTheme.primaryColor, letterSpacing: -0.5)),
                       SizedBox(height: 6),
-                      Text(
-                        'Gestion de flotte professionnelle',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
+                      Text('Gestion de flotte professionnelle',
+                        style: TextStyle(fontSize: 13, color: Colors.grey)),
                       SizedBox(height: 48),
-                      SizedBox(
-                        width: 32,
-                        height: 32,
+                      SizedBox(width: 32, height: 32,
                         child: CircularProgressIndicator(
-                          color: AppTheme.primaryColor,
-                          strokeWidth: 3,
-                        ),
-                      ),
+                            color: AppTheme.primaryColor, strokeWidth: 3)),
                     ],
                   ),
                 ),
